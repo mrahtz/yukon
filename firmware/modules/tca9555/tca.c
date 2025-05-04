@@ -179,13 +179,14 @@ static MP_DEFINE_CONST_FUN_OBJ_1(tca_port_stored_polarity_state_obj, tca_port_st
 
 static repeating_timer_t timer;
 static volatile uint32_t tick_count = 0;
+static volatile bool print_flag = false;
 
 bool timer_callback(repeating_timer_t *rt) {
     tick_count++;
     if (tick_count % 1000 == 0) {
-        mp_printf(&mp_plat_print, "Tick: %lu\n", tick_count);
+        print_flag = true;
     }
-    return true;  // Keep running
+    return true;
 }
 
 static mp_obj_t audiosample_start(void) {
@@ -203,6 +204,32 @@ static mp_obj_t audiosample_stop(void) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_0(audiosample_stop_obj, audiosample_stop);
 
+STATIC mp_obj_t audiosample_poll(void) {
+    if (print_flag) {
+        print_flag = false;
+        mp_printf(&mp_plat_print, "Tick: %lu\n", tick_count);
+    }
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(audiosample_poll_obj, audiosample_poll);
+
+
+STATIC mp_obj_t audiosample_measure_ticks(mp_obj_t n_ticks_obj) {
+    uint32_t n_ticks = mp_obj_get_int(n_ticks_obj);
+    uint64_t start = time_us_64();
+    uint32_t start_ticks = tick_count;
+
+    while ((tick_count - start_ticks) < n_ticks) {
+        tight_loop_contents(); // hint to avoid WFE sleep
+    }
+
+    uint64_t end = time_us_64();
+    mp_printf(&mp_plat_print, "%lu ticks in %llu us\n", n_ticks, (end - start));
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(audiosample_measure_ticks_obj, audiosample_measure_ticks);
+
 
 // Define all attributes of the module.
 // Table entries are key/value pairs of the attribute name (a string)
@@ -216,6 +243,10 @@ static const mp_rom_map_elem_t tca_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_change_output_mask), &tca_pin_change_output_mask_obj },
     { MP_ROM_QSTR(MP_QSTR_change_config_mask), &tca_pin_change_config_mask_obj },
     { MP_ROM_QSTR(MP_QSTR_change_polarity_mask), &tca_pin_change_polarity_mask_obj },
+    { MP_ROM_QSTR(MP_QSTR_start), MP_ROM_PTR(&audiosample_start_obj) },
+    { MP_ROM_QSTR(MP_QSTR_stop),  MP_ROM_PTR(&audiosample_stop_obj) },
+    { MP_ROM_QSTR(MP_QSTR_poll),  MP_ROM_PTR(&audiosample_poll_obj) },
+    { MP_ROM_QSTR(MP_QSTR_measure),  MP_ROM_PTR(&audiosample_measure_ticks_obj) },
     #if TCA9555_READ_INTERNALS
     { MP_ROM_QSTR(MP_QSTR_read_input), &tca_port_read_input_state_obj },
     { MP_ROM_QSTR(MP_QSTR_read_output), &tca_port_read_output_state_obj },
@@ -227,23 +258,8 @@ static const mp_rom_map_elem_t tca_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_stored_polarity), &tca_port_stored_polarity_state_obj },
     #endif
     #endif
-    { MP_ROM_QSTR(MP_QSTR_start), MP_ROM_PTR(&audiosample_start_obj) },
-    { MP_ROM_QSTR(MP_QSTR_stop),  MP_ROM_PTR(&audiosample_stop_obj) },
 };
 static MP_DEFINE_CONST_DICT(tca_module_globals, tca_module_globals_table);
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // Define module object.
 const mp_obj_module_t tca_cmodule = {

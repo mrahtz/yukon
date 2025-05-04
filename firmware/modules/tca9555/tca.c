@@ -204,17 +204,17 @@ static mp_obj_t audiosample_stop(void) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_0(audiosample_stop_obj, audiosample_stop);
 
-STATIC mp_obj_t audiosample_poll(void) {
+static mp_obj_t audiosample_poll(void) {
     if (print_flag) {
         print_flag = false;
         mp_printf(&mp_plat_print, "Tick: %lu\n", tick_count);
     }
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(audiosample_poll_obj, audiosample_poll);
+static MP_DEFINE_CONST_FUN_OBJ_0(audiosample_poll_obj, audiosample_poll);
 
 
-STATIC mp_obj_t audiosample_measure_ticks(mp_obj_t n_ticks_obj) {
+static mp_obj_t audiosample_measure_ticks(mp_obj_t n_ticks_obj) {
     uint32_t n_ticks = mp_obj_get_int(n_ticks_obj);
     uint64_t start = time_us_64();
     uint32_t start_ticks = tick_count;
@@ -228,7 +228,7 @@ STATIC mp_obj_t audiosample_measure_ticks(mp_obj_t n_ticks_obj) {
 
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(audiosample_measure_ticks_obj, audiosample_measure_ticks);
+static MP_DEFINE_CONST_FUN_OBJ_1(audiosample_measure_ticks_obj, audiosample_measure_ticks);
 
 
 // Define all attributes of the module.

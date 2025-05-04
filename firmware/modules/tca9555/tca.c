@@ -5,6 +5,11 @@
 #include "extmod/modmachine.h"
 #include "tca9555.h"
 
+#include "py/obj.h"
+#include "hardware/timer.h"
+#include "pico/stdlib.h"
+
+
 static mp_obj_t tca_pin_get_number(mp_obj_t pin_obj) {
     if (!mp_obj_is_type(pin_obj, &machine_pin_type)) {
         mp_raise_msg_varg(&mp_type_TypeError, MP_ERROR_TEXT("pin must be of type %q, not %q"), machine_pin_type.name, mp_obj_get_type(pin_obj)->name);
@@ -169,6 +174,36 @@ static MP_DEFINE_CONST_FUN_OBJ_1(tca_port_stored_polarity_state_obj, tca_port_st
 #endif
 #endif
 
+
+
+
+static repeating_timer_t timer;
+static volatile uint32_t tick_count = 0;
+
+bool timer_callback(repeating_timer_t *rt) {
+    tick_count++;
+    if (tick_count % 1000 == 0) {
+        mp_printf(&mp_plat_print, "Tick: %lu\n", tick_count);
+    }
+    return true;  // Keep running
+}
+
+STATIC mp_obj_t audiosample_start(void) {
+    bool ok = add_repeating_timer_us(-23, timer_callback, NULL, &timer);
+    if (!ok) {
+        mp_raise_msg(&mp_type_RuntimeError, "Failed to start timer");
+    }
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(audiosample_start_obj, audiosample_start);
+
+STATIC mp_obj_t audiosample_stop(void) {
+    cancel_repeating_timer(&timer);
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(audiosample_stop_obj, audiosample_stop);
+
+
 // Define all attributes of the module.
 // Table entries are key/value pairs of the attribute name (a string)
 // and the MicroPython object reference.
@@ -192,8 +227,23 @@ static const mp_rom_map_elem_t tca_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_stored_polarity), &tca_port_stored_polarity_state_obj },
     #endif
     #endif
+    { MP_ROM_QSTR(MP_QSTR_start), MP_ROM_PTR(&audiosample_start_obj) },
+    { MP_ROM_QSTR(MP_QSTR_stop),  MP_ROM_PTR(&audiosample_stop_obj) },
 };
 static MP_DEFINE_CONST_DICT(tca_module_globals, tca_module_globals_table);
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Define module object.
 const mp_obj_module_t tca_cmodule = {

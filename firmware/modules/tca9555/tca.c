@@ -188,20 +188,20 @@ bool timer_callback(repeating_timer_t *rt) {
     return true;  // Keep running
 }
 
-STATIC mp_obj_t audiosample_start(void) {
+static mp_obj_t audiosample_start(void) {
     bool ok = add_repeating_timer_us(-23, timer_callback, NULL, &timer);
     if (!ok) {
         mp_raise_msg(&mp_type_RuntimeError, "Failed to start timer");
     }
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(audiosample_start_obj, audiosample_start);
+static MP_DEFINE_CONST_FUN_OBJ_0(audiosample_start_obj, audiosample_start);
 
-STATIC mp_obj_t audiosample_stop(void) {
+static mp_obj_t audiosample_stop(void) {
     cancel_repeating_timer(&timer);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(audiosample_stop_obj, audiosample_stop);
+static MP_DEFINE_CONST_FUN_OBJ_0(audiosample_stop_obj, audiosample_stop);
 
 
 // Define all attributes of the module.
